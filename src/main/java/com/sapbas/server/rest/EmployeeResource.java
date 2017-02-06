@@ -1,6 +1,5 @@
 package com.sapbas.server.rest;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import javax.ws.rs.Consumes;
@@ -33,14 +32,8 @@ public class EmployeeResource {
     @GET
     @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
     @Secured({Privilege.EMPLOYEE_SEARCH})
-    public List<Employee> searchAllEmployees(@QueryParam("firstName") String firstName) {
-        List<Employee> employeeList = employeeRepository.getAllEmployees();
-        List<Employee> searchResult = new ArrayList<Employee>();
-        for(Employee emp : employeeList) {
-            if(emp.getFirstName().equals(firstName)) {
-                searchResult.add(emp);
-            }
-        }
+    public List<Employee> searchAllEmployees(@QueryParam("firstName") String firstName, @QueryParam("lastName") String lastName) {
+        List<Employee> searchResult = employeeRepository.searchEmployees(firstName, lastName);
         return searchResult;
     }
 

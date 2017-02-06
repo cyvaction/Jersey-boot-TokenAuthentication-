@@ -41,7 +41,7 @@ public class JerseyApiIT {
         
         Token accessToken = mapper.readValue(httpResponse.getEntity().getContent(), Token.class);
         
-        final HttpGet searchEmployeeRequest = new HttpGet(SERVICE_URL+"?firstName=Jane");
+        final HttpGet searchEmployeeRequest = new HttpGet(SERVICE_URL+"?firstName=Jane&lastName=Doe");
         searchEmployeeRequest.setHeader("Accept", "application/json");
         searchEmployeeRequest.setHeader("Authorization", "Bearer " + accessToken.getAccessToken());
         final HttpResponse searchResponse = HttpClientBuilder.create().build().execute(searchEmployeeRequest);
@@ -54,7 +54,7 @@ public class JerseyApiIT {
         
     }
 
-    /*    @Test
+    /*@Test
     public void givenGetEmployee_whenEmployeeExists_thenResponseCodeSuccess() throws IOException {
         final HttpUriRequest request = new HttpGet(SERVICE_URL + "/1");
     

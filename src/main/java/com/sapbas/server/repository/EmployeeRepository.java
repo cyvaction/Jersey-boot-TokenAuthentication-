@@ -6,7 +6,7 @@ import com.sapbas.server.model.Employee;
 
 public interface EmployeeRepository {
 
-    public List<Employee> getAllEmployees();
+    public List<Employee> searchEmployees(String firstName, String lastName);
 
     public Employee getEmployee(int id);
 
