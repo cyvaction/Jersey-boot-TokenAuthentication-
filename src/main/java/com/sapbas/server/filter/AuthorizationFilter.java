@@ -8,6 +8,8 @@ import java.util.Arrays;
 import java.util.List;
 
 import javax.annotation.Priority;
+import javax.naming.NamingException;
+import javax.naming.directory.Attributes;
 import javax.ws.rs.Priorities;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
@@ -20,6 +22,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.ldap.core.AttributesMapper;
+import org.springframework.ldap.core.LdapTemplate;
 
 import com.sapbas.server.privileges.Privilege;
 import com.sapbas.server.security.Secured;
@@ -30,25 +34,28 @@ import com.sapbas.server.security.Secured;
 public class AuthorizationFilter implements ContainerRequestFilter {
 
     private final Logger logger = LoggerFactory.getLogger(AuthorizationFilter.class);
-    
+
     @Context
     private ResourceInfo resourceInfo;
-    
+
     @Autowired
     JdbcTemplate jdbcTemplate;
 
+    @Autowired
+    private LdapTemplate ldapTemplate;
+
     @Override
     public void filter(ContainerRequestContext requestContext) throws IOException {
-        
+
         // Get the resource class which matches with the requested URL
         // Extract the roles declared by it
         Class<?> resourceClass = resourceInfo.getResourceClass();
-        List<Privilege> classPrivs = extractPrivs(resourceClass);
+        Privilege classPriv = extractPriv(resourceClass);
 
         // Get the resource method which matches with the requested URL
         // Extract the roles declared by it
         Method resourceMethod = resourceInfo.getResourceMethod();
-        List<Privilege> methodPrivs = extractPrivs(resourceMethod);
+        Privilege methodPriv = extractPriv(resourceMethod);
 
         try {
 
@@ -57,10 +64,10 @@ public class AuthorizationFilter implements ContainerRequestFilter {
 
             String username = requestContext.getSecurityContext().getUserPrincipal().getName();
 
-            if (methodPrivs.isEmpty()) {
-                checkPermissions(classPrivs, username);
+            if (methodPriv.equals(methodPriv.DEFAULT)) {
+                checkPermissions(classPriv, username);
             } else {
-                checkPermissions(methodPrivs, username);
+                checkPermissions(methodPriv, username);
             }
 
         } catch (Exception e) {
@@ -70,60 +77,75 @@ public class AuthorizationFilter implements ContainerRequestFilter {
     }
 
     // Extract the roles from the annotated element
-    private List<Privilege> extractPrivs(AnnotatedElement annotatedElement) {
+    private Privilege extractPriv(AnnotatedElement annotatedElement) {
         if (annotatedElement == null) {
-            return new ArrayList<Privilege>();
+            return Privilege.DEFAULT;
         } else {
             Secured secured = annotatedElement.getAnnotation(Secured.class);
             if (secured == null) {
-                return new ArrayList<Privilege>();
+                return Privilege.DEFAULT;
             } else {
-                Privilege[] allowedPrivs = secured.value();
-                return Arrays.asList(allowedPrivs);
+                Privilege allowedPriv = secured.value();
+                return allowedPriv;
             }
         }
     }
 
-    private void checkPermissions(List<Privilege> requiredPrivs, String username) {
+    private void checkPermissions(Privilege requiredPriv, String username) {
+
+        List<String> userRoles = ldapTemplate.search("ou=roleusers", "uniqueMember=cn=" + username + ",ou=users,dc=example,dc=com", new AttributesMapper() {
+            public Object mapFromAttributes(Attributes attrs) throws NamingException {
+                return attrs.get("cn").get();
+            }
+        });
+
+
+        List<String> permRoles = ldapTemplate.search("ou=rolepermissions", "uniqueMember=cn=" + requiredPriv.name() + ",ou=permissions,dc=example,dc=com", new AttributesMapper() {
+            public Object mapFromAttributes(Attributes attrs) throws NamingException {
+                return attrs.get("cn").get();
+            }
+        });
+
+        boolean forbidden = true;
         
-        String role = "admin".equals(username)?"ROLE_WRITE":"ROLE_READ";
-        
-        List<String> roleList = new ArrayList<String>();
-        roleList.add(role);
-        
-        /*List<Privilege> privList = new ArrayList<Privilege>();
-        
-        for(String userRole : roleList) {
-            privList.addAll(roleMap.get(userRole));
-        }*/
-        
-        List<String> privList=jdbcTemplate.queryForList(getQuery(roleList),String.class);
-        System.out.println(getQuery(roleList));
-        System.out.println(privList);
-        boolean forbidden = false;
-        
-        for(Privilege priv : requiredPrivs) {
-            if(!privList.contains(priv.toString())) {
-                forbidden = true;
+        for(String permRole : permRoles) {
+            if(userRoles.contains(permRole)) {
+                forbidden = false;
                 break;
             }
         }
-        
-        if(forbidden) {
+
+        if (forbidden) {
             throw new javax.ws.rs.ForbiddenException();
         }
     }
-    
+
     public String getQuery(List<String> roles) {
 
         String roleNameList = null;
-        for(String roleName : roles) {
-            if(roleNameList!=null) {
+        for (String roleName : roles) {
+            if (roleNameList != null) {
                 roleNameList = roleNameList + "'" + roleName + "',";
             }
             roleNameList = "'" + roleName + "'";
         }
-        
-        return "SELECT ACCESS from ROLEACCESS WHERE ROLE IN (" + roleNameList + ")"; 
+
+        return "SELECT ACCESS from ROLEACCESS WHERE ROLE IN (" + roleNameList + ")";
+    }
+
+    public JdbcTemplate getJdbcTemplate() {
+        return jdbcTemplate;
+    }
+
+    public void setJdbcTemplate(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
+    }
+
+    public LdapTemplate getLdapTemplate() {
+        return ldapTemplate;
+    }
+
+    public void setLdapTemplate(LdapTemplate ldapTemplate) {
+        this.ldapTemplate = ldapTemplate;
     }
 }

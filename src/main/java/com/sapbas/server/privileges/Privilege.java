@@ -5,5 +5,6 @@ public enum Privilege {
     EMPLOYEE_UPDATE,
     EMPLOYEE_DELETE,
     EMPLOYEE_SEARCH,
-    EMPLOYEE_CREATE
+    EMPLOYEE_CREATE,
+    DEFAULT
 }

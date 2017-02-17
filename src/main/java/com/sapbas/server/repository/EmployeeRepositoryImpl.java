@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
@@ -39,11 +40,13 @@ public class EmployeeRepositoryImpl implements EmployeeRepository {
     public Employee getEmployee(int id) {
         String sql = "SELECT * FROM EMPLOYEE WHERE ID = ?";
 
-        Employee employee = (Employee) getJdbcTemplate().queryForObject(sql, new Object[] { id }, new EmployeeRowMapper());
-
-        if (employee == null) {
+        Employee employee = null;
+        try {
+            employee = (Employee) getJdbcTemplate().queryForObject(sql, new Object[] { id }, new EmployeeRowMapper());
+        } catch (EmptyResultDataAccessException e) {
             throw new EmployeeNotFound("No Employee with id: " + id + " not found");
         }
+
         return employee;
     }
 

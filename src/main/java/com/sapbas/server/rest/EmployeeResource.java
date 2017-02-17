@@ -31,7 +31,7 @@ public class EmployeeResource {
 
     @GET
     @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
-    @Secured({Privilege.EMPLOYEE_SEARCH})
+    @Secured(Privilege.EMPLOYEE_SEARCH)
     public List<Employee> searchAllEmployees(@QueryParam("firstName") String firstName, @QueryParam("lastName") String lastName) {
         List<Employee> searchResult = employeeRepository.searchEmployees(firstName, lastName);
         return searchResult;
@@ -40,7 +40,7 @@ public class EmployeeResource {
     @GET
     @Path("/{id}")
     @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
-    @Secured({Privilege.EMPLOYEE_READ})
+    @Secured(Privilege.EMPLOYEE_READ)
     public Employee getEmployee(@PathParam("id") int id) {
         return employeeRepository.getEmployee(id);
     }
@@ -48,7 +48,7 @@ public class EmployeeResource {
     @PUT
     @Path("/{id}")
     @Consumes({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
-    @Secured({Privilege.EMPLOYEE_UPDATE})
+    @Secured(Privilege.EMPLOYEE_UPDATE)
     public Response updateEmployee(Employee employee, @PathParam("id") int id) {
         try {
             employeeRepository.updateEmployee(employee, id);
@@ -61,7 +61,7 @@ public class EmployeeResource {
     @DELETE
     @Path("/{id}")
     @Consumes({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
-    @Secured({Privilege.EMPLOYEE_DELETE})
+    @Secured(Privilege.EMPLOYEE_DELETE)
     public Response deleteEmployee(@PathParam("id") int id) {
         try {
             employeeRepository.deleteEmployee(id);
@@ -73,7 +73,7 @@ public class EmployeeResource {
 
     @POST
     @Consumes({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
-    @Secured({Privilege.EMPLOYEE_CREATE})
+    @Secured(Privilege.EMPLOYEE_CREATE)
     public Response addEmployee(Employee employee, @Context UriInfo uriInfo) {
         try {
             employeeRepository.addEmployee(new Employee(employee.getId(), employee.getFirstName(), employee.getLastName(), employee.getAge()));

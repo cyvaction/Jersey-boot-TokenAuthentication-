@@ -13,5 +13,5 @@ import com.sapbas.server.privileges.Privilege;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.TYPE, ElementType.METHOD })
 public @interface Secured {
-    Privilege[] value() default {};
+    Privilege value() default Privilege.DEFAULT;
 }
